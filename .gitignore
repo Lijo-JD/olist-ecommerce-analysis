@@ -1,0 +1,31 @@
+# Data (never commit raw or processed)
+data/raw/*.csv
+data/processed/*
+!data/README.md
+
+# Secrets
+.env
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Outputs
+visuals/*.png
+visuals/*.svg
+*.db
+
+# OS
+.DS_Store
+Thumbs.db

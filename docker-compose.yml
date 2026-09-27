@@ -1,0 +1,69 @@
+# =============================================================================
+# Olist E-Commerce Analytics — Docker stack
+# =============================================================================
+# Services:
+#   postgres  — PostgreSQL 16 with a named volume for persistence
+#   pgadmin   — Web UI for browsing the database
+#
+# Usage:
+#   docker compose up -d          # start
+#   docker compose ps             # check status
+#   docker compose logs -f        # follow logs
+#   docker compose down           # stop (keeps data)
+#   docker compose down -v        # stop and wipe the volume
+#
+# Credentials match the defaults in .env.example, so the Python pipeline
+# works without any extra configuration.
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: olist-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: olist
+      # Encoding and locale — UTF-8 so the Portuguese text in the dataset
+      # (city names, category names) stores correctly.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      # Named volume keeps data across container restarts.
+      # `docker compose down -v` wipes it.
+      - olist_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Wait until Postgres is actually accepting connections before other
+      # services try to use it.
+      test: ["CMD-SHELL", "pg_isready -U olist -d olist"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: olist-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@olist.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      # Skip the initial setup wizard — the pgAdmin server is not exposed
+      # to the internet anyway.
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - olist_pgadmin:/var/lib/pgadmin
+
+volumes:
+  olist_pgdata:
+    name: olist_pgdata
+  olist_pgadmin:
+    name: olist_pgadmin
